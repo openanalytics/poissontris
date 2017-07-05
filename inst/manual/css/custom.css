@@ -1,0 +1,147 @@
+/******************************************/
+/* CUSTOM CSS FILE FOR MARKDOWN REPORTING */
+/******************************************/
+
+/* headings (size - color - font - ...)*/
+
+body{
+    max-width: 95%;
+    /* border: 3px solid #73AD21;  TODO remove */
+}
+
+div.main-container {
+	max-width: 85% !important;   /* 1400px */
+	/* border: 3px solid #083D77;  TODO remove */
+}
+
+/* div.container-fluid { */
+/* 	max-width: 100%;   TODO remove */
+/* 	border: 3px solid #083D77; */
+/* } */
+
+h1, h2, h3, h4, h5, h6 { 
+  font-family: Helvetica, Arial, sans-serif;
+  margin: 1.2em 0em 0.6em 0em;
+}
+
+h1 {
+  font-size: 250%;
+  font-weight: normal;
+  color: #083D77;
+  line-height: 1.1em;
+  font-weight: bold;
+}
+
+h1.title {
+	color: #C81D25;
+}
+
+h2 {
+  font-size: 150%;
+  line-height: 1.25em;
+  color: #C36F09;
+  border-bottom: 1px #083D77 solid;
+}
+
+h3 {
+  color: #C8963E;
+  font-size: 130%;  
+  line-height: 1.2em;
+}
+
+h4 {
+  color: #E3C567;
+  font-size: 115%;  
+  line-height: 1.1em;
+}
+
+h4.author em {
+	color: #C36F09;
+	font-style: normal;
+}
+
+h4.date em {
+	color: #C36F09;
+	font-style: normal;
+}
+
+h5, h6 {
+  font-size:105%;
+} 
+
+/* paragraph titles */
+#paragraphTitle{
+  font-size:110%;
+  color : #0a3551;
+  line-height: 1.2em;
+}
+
+#subparagraphTitle{
+  font-size:105%;
+  color : #061e2e;
+  line-height: 1.2em;
+}
+
+#TOC ul {
+    padding-left: 40px;
+    margin-left: -1.5em;
+    margin-top: 5px;
+    margin-bottom: 5px;
+    color: #083D77;
+    font-weight: bold
+  }
+  #TOC ul ul {
+    margin-left: -2em;
+    color: #C36F09;
+   font-weight: normal
+  }
+  #TOC ul ul ul {
+    margin-left: -2em;
+    color: #C8963E;
+   font-weight: normal
+  }
+  #TOC ul ul ul ul {
+    margin-left: -2em;
+    color: #E3C567;
+   font-weight: normal
+  }
+  #TOC li {
+    line-height: 16px;
+  }
+
+
+/* images and tables*/
+
+table {
+   max-width: 97.5%;
+   border: 0px;
+   align: center;
+   border-spacing: 10 px;
+   border-collapse: separate;
+   padding: 0 0.5em;
+}
+tbody tr:nth-child(odd) td {/* alternating row colors */
+  background-color: #ebebeb;
+}
+td {/*cell of each table*/
+  padding: 5px;
+  font-family: sans-serif;
+  background-color: white;
+  font-size: 13px;
+}
+table, img{/*marings*/
+  margin: 0em auto 1em;
+  margin-bottom: 0.2px;
+  margin-top: 8px;
+}
+pre, img {
+  max-width: 100%;
+  display: block;
+}
+
+/* links in document */
+
+a { color: #479ace; }
+a:active { color: #479ace; outline: none; }
+a:visited { color: #479ace; }
+a:hover { color: #75b3da; }

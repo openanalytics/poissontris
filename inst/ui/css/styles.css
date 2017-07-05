@@ -1,0 +1,40 @@
+/* Use Cantarell font */
+
+@import url('https://fonts.googleapis.com/css?family=Cantarell|Roboto');
+
+body {
+	font-family: 'Cantarell', sans-serif;
+}
+
+
+/* center and increase size for the title */
+
+h1 {
+	text-align:center;
+	font-size: 300%;
+	font-weight: bold;
+	padding: 10px; /* give it a bit opf space */
+}
+
+h1 span {
+	font-size: 50%;
+	font-weight: normal;
+}
+
+/* Show a message when session is disconnected */
+
+div#shiny-disconnected-overlay {
+	opacity: 0.85 !important
+} 
+div#shiny-disconnected-overlay:before {
+	content: "Your session has been disconnected";
+	text-align: center;
+	font-size: 30pt;
+	background-color: white;
+	padding: 5%; 
+	width: 100%;
+	position: absolute;
+	top: 50%;
+	transform: translateY(-50%);
+}
+
