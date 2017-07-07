@@ -20,18 +20,24 @@ function(input, output, session) {
   counterDuration <- 0
   noDownCounter <- 0
   
-  # was the button pressed this frame
-  leftWasPressed <- FALSE
-  rightWasPressed <- FALSE
-  downWasPressed <- FALSE
-  clockWasPressed <- FALSE
-  counterWasPressed <- FALSE
-  switchWasPressed <- FALSE
+  # old counter values
+  leftCounterOld <- 0
+  downCounterOld <- 0
+  rightCounterOld <- 0
+  clockCounterOld <- 0
+  counterCounterOld <- 0
   
   # game data
   lambda <- 3.5
   score <- 0
+  pieceMoved <<- TRUE
   
+  # plot reactive value
+  rv <- reactiveValues()
+  
+  # debugging
+  tickTocks <- 0
+  oldTime <- Sys.time()
   
   ##########################
   # define reactive values #
@@ -47,116 +53,106 @@ function(input, output, session) {
       numShapes = 0,
       highScore = if (file.exists("highScore.rds")) readRDS("highScore.rds") else 0)
   
+  
   ######################
-  # Observe input keys #
+  #    baseline plot   #
+  s1 <- svgstring(standalone=FALSE, height=600/72, width=297/72)
+  par(mar = c(0, 0, 0, 0))
+  blankPlot(xlim = c(-0.5, 10.5), 
+      ylim = c(-0.5, 22.5))   # , asp = 1
+  rect(xleft = 0, xright = 10,
+      ybottom = 20, ytop = 22, 
+      lwd = 4, border = NA, col = grey(0.95))
+  for(i in 1:9)        # TODO replace 
+    segments(x0 = i, y0 = 0, y1 = 22, 
+        col = gray(0.7))
+  segments(x0 = 0, x1 = 10, y0 = 0, lwd = 4)
+  segments(x0 = 0, y0 = 0, y1 = 22, lwd = 4)
+  segments(x0 = 10, y0 = 0, y1 = 22, lwd = 4)
+  dev.off()
+  output[["s1"]] <- renderUI({ HTML(s1()) })
   
-  # left
-  observeEvent(input$left, {    
-        # keydown
-        if(input$left == 50)
-          leftWasPressed <<- TRUE
-        
-        # keyup
-        if(input$left == 30)
-          leftDuration <<- 0
-      })
   
-  # right
-  observeEvent(input$right, { 
-        # keydown
-        if(input$right == 50)
-          rightWasPressed <<- TRUE
-        
-        # keyup
-        if(input$right == 30)
-          rightDuration <<- 0
-      })
   
-  # down
-  observeEvent(input$down,{ 
-        # keydown
-        if(input$down == 50)
-          downWasPressed <<- TRUE
-        
-        # keyup
-        if(input$down == 30) {
-          downDuration <<- 0
-          canPressDown <<- TRUE
-        }
-        
-      })
-  
-  # clockwise rotation
-  observeEvent(input$clock,{ 
-        # keydown
-        if(input$clock == 50)
-          clockWasPressed <<- TRUE
-      })
-  
-  # counter clockwise rotation
-  observeEvent(input$counter,{ 
-        # keydown
-        if(input$counter == 50)
-          counterWasPressed <<- TRUE
-      })
-  
-  #########
-  # plots #
-  rv <- reactiveValues()
-  ms <- 25
+  ############################
+  # plots and value updating #
+  ms <- 33
   tickTock30 <- reactiveTimer(ms)
   observeEvent(tickTock30(), {
         
+        tickTocks <<- tickTocks + 1
+        if(tickTocks %% 30 == 0) {
+          newTime <- Sys.time()
+          print(as.numeric(difftime(newTime, oldTime)))
+          oldTime <<- newTime
+        }
+        # TODO think about can press down
+        # TODO think about using the %% mod functions again
         
         if(gameActive) {
-          # left movement
-          if(input$left == 50)
-            leftDuration <<- leftDuration + 1
           
-          if(leftWasPressed | 
+          
+          # left movement
+          if(input$leftCounter == leftCounterOld & input$left == 50) {
+            leftDuration <<- leftDuration + 1
+          } else 
+            leftDuration <<- 0
+          
+          if(input$leftCounter > leftCounterOld | 
               (leftDuration > holdDuration)) {  
-            if(!detectCollision(values, xChange = -1))
+            if(!detectCollision(values, xChange = -1)) {
               values$xOffset <- values$xOffset - 1
-            leftWasPressed <<- FALSE
+              pieceMoved <<- TRUE
+            }
+            leftCounterOld <<- input$leftCounter
           }
           
           # right movement
-          if(input$right == 50){
+          if(input$rightCounter == rightCounterOld & input$right == 50) {
             rightDuration <<- rightDuration + 1
-          }
+          } else 
+            rightDuration <<- 0
           
-          if(rightWasPressed | 
+          if(input$rightCounter > rightCounterOld | 
               (rightDuration > holdDuration)) {  
-            if(!detectCollision(values, xChange = +1))
+            if(!detectCollision(values, xChange = +1)){
               values$xOffset <- values$xOffset + 1
-            rightWasPressed <<- FALSE
+              pieceMoved <<- TRUE
+            }
+            rightCounterOld <<- input$rightCounter
+            
           }
           
           
           # clockwise rotation
-          if(clockWasPressed)
+          if(input$clock > clockCounterOld)
             if(!detectCollision(values, rotateClockwise = TRUE)) {
               values$shape <- rotateClockwise(values$shape)
-              clockWasPressed <<- FALSE
+              clockCounterOld <<- input$clock
+              pieceMoved <<- TRUE
             }
           
           # counter rotation
-          if(counterWasPressed)
+          if(input$counter > counterCounterOld)
             if(!detectCollision(values, rotateCounter = TRUE)) {
               values$shape <- rotateCounter(values$shape) 
-              counterWasPressed <<- FALSE
+              counterCounterOld <<- input$counter
+              pieceMoved <<- TRUE
             }
           
           
           # down movement
           noDownCounter <<- noDownCounter + 1
-          if(input$down == 50){
+          if(input$downCounter == downCounterOld & input$down == 50) {
             downDuration <<- downDuration + 1
-          }
+          } else 
+            downDuration <<- 0
           
-          if(noDownCounter >= 450/ms | downWasPressed | 
-              (canPressDown & downDuration > holdDuration)) {   #& downDuration %% holdDuration == 1
+          if(noDownCounter >= 450/ms | input$downCounter > downCounterOld | 
+              (downDuration > holdDuration)) {   #& downDuration %% holdDuration == 1
+            pieceMoved <<- TRUE
             
+            downCounterOld <<- input$downCounter
             if(detectCollision(values, yChange = -1)) { 
               
               # update values          
@@ -170,6 +166,16 @@ function(input, output, session) {
                 lambda <<- lambda + 0.25 * linesCleared
               }
               values$numShapes <- values$numShapes + 1
+              
+              # plot the blocks that have already fallen
+              s2 <- svgstring(standalone=FALSE, height=600/72, width=297/72, 
+                  bg = "transparent")
+              par(mar = c(0, 0, 0, 0))
+              blankPlot(xlim = c(-0.5, 10.5), 
+                  ylim = c(-0.5, 22.5))   # , asp = 1
+              plotBg(values$bg)
+              dev.off()
+              rv$s2 <- s2() 
               
               # check for game end
               if(any(values$bg$y > 19)) {
@@ -186,63 +192,70 @@ function(input, output, session) {
             }
             downWasPressed <<- FALSE
             noDownCounter <<- 0
+            
+            # plot the active block here?
+            
           }
         }
         
-        # plot code
-        s <- svgstring(standalone=FALSE, height=600/72, width=297/72)
-        par(mar = c(0, 0, 0, 0))
-        blankPlot(xlim = c(-0.5, 10.5), 
-            ylim = c(-0.5, 22.5))   # , asp = 1
-        rect(xleft = 0, xright = 10,
-            ybottom = 20, ytop = 22, 
-            lwd = 4, border = NA, col = grey(0.95))
-        for(i in 1:9)
-          segments(x0 = i, y0 = 0, y1 = 22, 
-              col = gray(0.7))
-        segments(x0 = 0, x1 = 10, y0 = 0, lwd = 4)
-        segments(x0 = 0, y0 = 0, y1 = 22, lwd = 4)
-        segments(x0 = 10, y0 = 0, y1 = 22, lwd = 4)
-        
-        plotBg(values$bg)
-        plotShape(values$shape, xOffset = values$xOffset,
-            yOffset = values$yOffset)
+        if(pieceMoved) {
+          # plot the active block
+          s3 <- svgstring(standalone=FALSE, height=600/72, width=297/72, 
+              bg = "transparent")
+          par(mar = c(0, 0, 0, 0))
+          blankPlot(xlim = c(-0.5, 10.5), 
+              ylim = c(-0.5, 22.5))   # , asp = 1
+          plotShape(values$shape, xOffset = values$xOffset,
+              yOffset = values$yOffset)
+          dev.off()
+          rv$s3 <- s3() 
+          pieceMoved <<- FALSE
+        }
         
         if(!gameActive) {
+          s4 <- svgstring(standalone=FALSE, height=600/72, width=297/72, 
+              bg = "transparent")
+          par(mar = c(0, 0, 0, 0))
+          blankPlot(xlim = c(-0.5, 10.5), 
+              ylim = c(-0.5, 22.5))   # , asp = 1
           rect(xleft = 1.5, xright = 8.5,
               ybottom = 10, ytop = 14, 
               lwd = 4, col = "white")
           text(x = 5, y = 13, "Press Start to Begin")
-        }
-        
-        if(gameOver) {
-          text(x = 5, y = 11, paste0("Score: ", score))
-          if (score >= values$highScore) {
-            saveRDS(score, "highScore.rds")
-            values$highScore <- score
-            text(x = 5, y = 12, "High Score!", col = "red")
+          if(gameOver) {
+            text(x = 5, y = 11, paste0("Score: ", score))
+            if (score >= values$highScore) {
+              saveRDS(score, "highScore.rds")
+              values$highScore <- score
+              text(x = 5, y = 12, "High Score!", col = "red")
+            }
           }
-        }
-        dev.off()
-        rv$mainPlot <- s() 
+          
+          dev.off()
+          rv$s4 <- s4() 
+        } 
+        
       })
-  output[["mainPlot"]] <- renderUI({ HTML(rv$mainPlot) })
+  
+      
+      # ----------- other layered plots ------------- #
+      
+      output[["s2"]] <- renderUI({ HTML(rv$s2) })
+      output[["s3"]] <- renderUI({ HTML(rv$s3) })
+      output[["s4"]] <- renderUI({ HTML(rv$s4) })
+      
   
   
-  
-  
-  observe({
+  observeEvent(nextPiece$shape, {
         s <- svgstring(standalone=FALSE, height=170/72, width=170/72)
         par(mar = c(0, 0, 0, 0))
         valVec <- c(nextPiece$shape$x, nextPiece$shape$y)
         valRange <- c(min(-3.5, -1*max(abs(valVec))-0.5),
             max(max(abs(valVec))+1.5, 4.5) )
         
-        blankPlot(xlim = valRange, 
-            ylim = valRange)   # , asp = 1
-        
+        blankPlot(xlim = valRange, ylim = valRange)   # , asp = 1
         rect(valRange[1], valRange[1],
-            valRange[2], valRange[2], lwd = 4)
+            valRange[2], valRange[2], lwd = 4, col = NA, bg = NA)
         plotShape(nextPiece$shape, xOffset = 0,
             yOffset = 0)
         dev.off()
@@ -250,7 +263,7 @@ function(input, output, session) {
       })
   output[["nextPiece"]] <- renderUI({ HTML(rv$nextPiece) })
   
-  observe({
+  observeEvent(values$shape, {
         s <- svgstring(standalone=FALSE, height=300/72, width=450/72)
         par(mar = c(0, 0, 0, 0))
         blankPlot(xlim = c(0, 11), ylim = c(-0.07, 0.25))
@@ -283,7 +296,7 @@ function(input, output, session) {
   output[["pdf"]] <- renderUI({ HTML(rv$pdf) })
   
   
-  s <- svgstring(standalone=FALSE, height=170/72, width=170/72)
+  sControl <- svgstring(standalone=FALSE, height=170/72, width=170/72)
   par(mar = c(0, 0, 0, 0))
   blankPlot(xlim = c(-0.6, 1), ylim = c(-0.3, 1.3))
   points(x = c(0.5, 0.75, 0.5, 0.25), y = c(0.25, 0.5, 0.75, 0.5), 
@@ -298,8 +311,7 @@ function(input, output, session) {
       "Rotate \nClockwise", font = 2, cex = 0.8)
   rect(-0.6, -0.3, 1, 1.3, lwd = 4)
   dev.off()
-  rv$controls <- s() 
-  output[["controls"]] <- renderUI({ HTML(rv$controls) })
+  output[["controls"]] <- renderUI({ HTML(sControl()) })
   
   
   # ------------  game functions --------------- #
@@ -307,7 +319,16 @@ function(input, output, session) {
   observeEvent(input$startGame, {
         gameActive <<- TRUE
         
-        if(gameOver) {
+        # remove the start game box
+        s4 <- svgstring(standalone=FALSE, height=600/72, width=297/72, 
+            bg = "transparent")
+        par(mar = c(0, 0, 0, 0))
+        blankPlot(xlim = c(-0.5, 10.5), 
+            ylim = c(-0.5, 22.5))   # , asp = 1
+        dev.off()
+        rv$s4 <- s4() 
+        
+        if(gameOver) {     
           
           lambda <<- 3.5
           score <<- 0
@@ -319,6 +340,16 @@ function(input, output, session) {
           values$numShapes = 0
           
           nextPiece$shape <- makeShape(lambda)
+          
+          # reset the fallen blocks
+          s2 <- svgstring(standalone=FALSE, height=600/72, width=297/72, 
+              bg = "transparent")
+          par(mar = c(0, 0, 0, 0))
+          blankPlot(xlim = c(-0.5, 10.5), 
+              ylim = c(-0.5, 22.5))   # , asp = 1
+          plotBg(values$bg)
+          dev.off()
+          rv$s2 <- s2()
           
           values$highScore <- if (file.exists("highScore.rds")) readRDS("highScore.rds") else 0
           gameOver <<- FALSE
@@ -340,7 +371,7 @@ function(input, output, session) {
         
       })
   
-  
+
   
   # ----------- score output ----------------- #
   
@@ -350,6 +381,7 @@ function(input, output, session) {
       })
   
   output$highScore <- renderText(values$highScore)
+  #output$leftCounter <- renderText(tickTock30())
   
   output$pdfTitle <- renderText(paste0("Poisson PDF (&lambda; = ",
           values$shape$lambda[1], ")"))

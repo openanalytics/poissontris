@@ -1,2 +1,5 @@
+0.0.2
+    o stacked svg elements for improved performance
+    o eliminated all button observers
 0.0.1
-    o initial commit
+    o initial alpha version
