@@ -5,11 +5,15 @@
 #' @param yChange proposed y location change
 #' @param rotateClockwise (logical) whether to rotate the piece clockwise
 #' @param rotateCounter  (logical) whether to rotate the piece counter clockwise
+#' @param tryWallkick (logical) specify whether the function should attempt xShifts
+#'    to resolve a rotation
 #' @return (logical) whether a collision will occur
 #' @author Jason Waddell
 #' @export 
 detectCollision <- function(values, xChange = 0, yChange = 0, 
-    rotateClockwise = FALSE, rotateCounter = FALSE) {
+    rotateClockwise = FALSE, rotateCounter = FALSE, tryWallkick = TRUE) {
+  
+  out <- FALSE
   
   tmpShape <- values$shape
   if(rotateClockwise)
@@ -20,24 +24,61 @@ detectCollision <- function(values, xChange = 0, yChange = 0,
   tmpShape$x <- tmpShape$x + values$xOffset + xChange
   tmpShape$y <- tmpShape$y + values$yOffset + yChange
   
+  # shape beneath the floor
   if(min(tmpShape$y) < 0) 
     return(TRUE)
   
-  if(max(tmpShape$x) > 9)
-    return(TRUE)
+  # shape beyond the right wall
+  if(max(tmpShape$x) > 9) {
+    if(tryWallkick & (rotateClockwise | rotateCounter)) 
+      for(i in (-1):(-3)) {
+        collision <- detectCollision(values, xChange = i,
+            rotateClockwise = rotateClockwise, tryWallkick = FALSE)
+        if(!collision)
+          return(list(FALSE, xChange = i))
+      }
+    
+    return(TRUE)   
+  }
   
-  if(min(tmpShape$x) < 0)
+  # shape beyond the left wall
+  if(min(tmpShape$x) < 0) {
+    if(tryWallkick & (rotateClockwise | rotateCounter))   
+      for(i in 1:3) {
+        collision <- detectCollision(values, xChange = i,
+            rotateClockwise = rotateClockwise, tryWallkick = FALSE)
+        if(!collision)
+          return(list(FALSE, xChange = i))
+      }
+    
     return(TRUE)
+  }
   
+  
+  # check collision with background pieces
   if(length(values$bg$y) > 0) 
     if((min(tmpShape$y) <= max(values$bg$y))) {
       
-      idx <-which(values$bg$y >= min(tmpShape$y))
+      idx <- which(values$bg$y >= min(tmpShape$y) & 
+              values$bg$x %in% unique(tmpShape$x)) 
       
       z1 <- paste(tmpShape$x, tmpShape$y, sep = ",")
       z2 <- paste(values$bg$x[idx], values$bg$y[idx], sep = ",")
-      if(any(z1 %in% z2))
+      
+      # collision detected with background, but let's try wallkicks
+      if(any(z1 %in% z2)) {
+        if(tryWallkick & (rotateClockwise | rotateCounter))   
+          for(i in c(1, -1, 1, 2)) {
+            collision <- detectCollision(values, xChange = i,
+                rotateClockwise = rotateClockwise, tryWallkick = FALSE)
+            if(!collision)
+              return(list(FALSE, xChange = i))
+          }
+        
+        # no wallkicks worked
         return(TRUE)
+      }
+        
     }
   
   return(FALSE)
@@ -67,9 +108,9 @@ clearLines <- function(values) {
         values$bg$y[i] <- 
             values$bg$y[i] - sum(remLines < values$bg$y[i])
       }
-
-    }
       
+    }
+    
     return(length(remLines))
   }
   return(0)  # return TRUE for altering fal intervall

@@ -125,21 +125,35 @@ function(input, output, session) {
           
           
           # clockwise rotation
-          if(input$clock > clockCounterOld)
-            if(!detectCollision(values, rotateClockwise = TRUE)) {
+          if(input$clock > clockCounterOld) {
+            out <- detectCollision(values, rotateClockwise = TRUE)
+            if(!out[[1]]) {
+              if(length(out) > 1)
+                values$xOffset <- values$xOffset + out$xChange
               values$shape <- rotateClockwise(values$shape)
+              
               clockCounterOld <<- input$clock
               pieceMoved <<- TRUE
             }
+          }
+          
           
           # counter rotation
-          if(input$counter > counterCounterOld)
-            if(!detectCollision(values, rotateCounter = TRUE)) {
+          if(input$counter > counterCounterOld){
+            out <- detectCollision(values, rotateCounter = TRUE)
+            if(!out[[1]]) {
+              if(length(out) > 1)
+                values$xOffset <- values$xOffset + out$xChange
               values$shape <- rotateCounter(values$shape) 
+              
               counterCounterOld <<- input$counter
               pieceMoved <<- TRUE
             }
+          }
           
+          # the down key is not pressed
+          if(input$down == 30)
+            canPressDown <<- TRUE
           
           # down movement
           noDownCounter <<- noDownCounter + 1
@@ -148,12 +162,14 @@ function(input, output, session) {
           } else 
             downDuration <<- 0
           
-          if(noDownCounter >= 450/ms | input$downCounter > downCounterOld | 
-              (downDuration > holdDuration)) {   #& downDuration %% holdDuration == 1
+          if(noDownCounter >= 450/ms | (canPressDown & (input$downCounter > downCounterOld)) | 
+              (canPressDown & (downDuration > holdDuration))) {   #& downDuration %% holdDuration == 1
             pieceMoved <<- TRUE
             
             downCounterOld <<- input$downCounter
             if(detectCollision(values, yChange = -1)) { 
+              
+              canPressDown <<- FALSE
               
               # update values          
               values <- addPieceToBg(values, lambda, nextPiece)
@@ -183,8 +199,8 @@ function(input, output, session) {
                 gameActive <<- FALSE
               }
               
-              if(input$down == 50)
-                canPressDown <<- FALSE
+              
+              
               
             } else {
               # move the piece if no collision
@@ -192,8 +208,6 @@ function(input, output, session) {
             }
             downWasPressed <<- FALSE
             noDownCounter <<- 0
-            
-            # plot the active block here?
             
           }
         }
@@ -237,13 +251,13 @@ function(input, output, session) {
         
       })
   
-      
-      # ----------- other layered plots ------------- #
-      
-      output[["s2"]] <- renderUI({ HTML(rv$s2) })
-      output[["s3"]] <- renderUI({ HTML(rv$s3) })
-      output[["s4"]] <- renderUI({ HTML(rv$s4) })
-      
+  
+  # ----------- other layered plots ------------- #
+  
+  output[["s2"]] <- renderUI({ HTML(rv$s2) })
+  output[["s3"]] <- renderUI({ HTML(rv$s3) })
+  output[["s4"]] <- renderUI({ HTML(rv$s4) })
+  
   
   
   observeEvent(nextPiece$shape, {
@@ -351,6 +365,17 @@ function(input, output, session) {
           dev.off()
           rv$s2 <- s2()
           
+          # draw the new active piece
+          s3 <- svgstring(standalone=FALSE, height=600/72, width=297/72, 
+              bg = "transparent")
+          par(mar = c(0, 0, 0, 0))
+          blankPlot(xlim = c(-0.5, 10.5), 
+              ylim = c(-0.5, 22.5))   # , asp = 1
+          plotShape(values$shape, xOffset = values$xOffset,
+              yOffset = values$yOffset)
+          dev.off()
+          rv$s3 <- s3() 
+          
           values$highScore <- if (file.exists("highScore.rds")) readRDS("highScore.rds") else 0
           gameOver <<- FALSE
           
@@ -371,7 +396,7 @@ function(input, output, session) {
         
       })
   
-
+  
   
   # ----------- score output ----------------- #
   
@@ -381,7 +406,6 @@ function(input, output, session) {
       })
   
   output$highScore <- renderText(values$highScore)
-  #output$leftCounter <- renderText(tickTock30())
   
   output$pdfTitle <- renderText(paste0("Poisson PDF (&lambda; = ",
           values$shape$lambda[1], ")"))

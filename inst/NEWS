@@ -1,3 +1,6 @@
+0.0.3
+    o implemented wallkicks
+    o fixed a minor plotting bug on game reset
 0.0.2
     o stacked svg elements for improved performance
     o eliminated all button observers
