@@ -36,8 +36,8 @@ function(input, output, session) {
   rv <- reactiveValues()
   
   # debugging
-  tickTocks <- 0
-  oldTime <- Sys.time()
+#  tickTocks <- 0
+#  oldTime <- Sys.time()
   
   ##########################
   # define reactive values #
@@ -80,13 +80,13 @@ function(input, output, session) {
   tickTock30 <- reactiveTimer(ms)
   observeEvent(tickTock30(), {
         
-        tickTocks <<- tickTocks + 1
-        if(tickTocks %% 30 == 0) {
-          newTime <- Sys.time()
-          print(as.numeric(difftime(newTime, oldTime)))
-          oldTime <<- newTime
-        }
-        # TODO think about can press down
+#        tickTocks <<- tickTocks + 1
+#        if(tickTocks %% 30 == 0) {
+#          newTime <- Sys.time()
+#          print(as.numeric(difftime(newTime, oldTime)))
+#          oldTime <<- newTime
+#        }
+
         # TODO think about using the %% mod functions again
         
         if(gameActive) {

@@ -1,13 +1,13 @@
 # for initial tests, set wd to /ui/
 # remove this code later
-#suppressWarnings({if(!require(poissontris)) {  # TODO change
+suppressWarnings({if(!require(poissontris)) {  # TODO change
         cat("Loading via devtools...")
         library(devtools)
         load_all("./../../../poissontris")
-#      } else {
-#        library(poissontris)
-#        cat("Loading the package...")
-#      }})
+      } else {
+        library(poissontris)
+        cat("Loading the package...")
+      }})
 
 library(oaColors)
 library(oaPlots)
