@@ -6,5 +6,5 @@ Date: 2017-07-08
 Author: Jason Waddell 
 Maintainer: Jason Waddell <jason.waddell@openanalytics.eu>
 Description: A shiny package for running the Poissontris game. Number of blocks in a piece are sampled from the poisson distribution. As you clear lines, Lambda increases. Controller use and high-score tracking supported
-License: Software for Internal Use at Open Analytics NV
+License: GPL-3
 Depends: oaColors, oaPlots, htmltools, svglite, pryr, shiny
